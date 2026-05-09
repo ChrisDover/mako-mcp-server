@@ -1,0 +1,63 @@
+{
+  "name": "@pollinate/mako-mcp",
+  "version": "0.1.0",
+  "description": "MAKO's paid x402 endpoints (route, pulse, pricing, reputation, verify) as installable MCP tools. Drop-in for Claude Desktop, Hermes Agent, OpenClaw, Cline, Continue.dev, and any MCP-native agent framework.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mako-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "x402",
+    "agent-payments",
+    "mako",
+    "pollinate",
+    "claude",
+    "hermes",
+    "openclaw",
+    "agent-commerce"
+  ],
+  "author": "Pollinate Research",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChrisDover/mako-mcp-server.git"
+  },
+  "homepage": "https://github.com/ChrisDover/mako-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/ChrisDover/mako-mcp-server/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "viem": "^2.48.11",
+    "x402-fetch": "^1.2.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.40",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}
