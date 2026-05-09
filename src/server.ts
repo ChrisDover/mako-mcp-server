@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { z } from "zod";
 import { loadConfig } from "./config.js";
-import { buildSigner, buyerAddress } from "./x402/wallet.js";
+import { buildX402Client } from "./x402/wallet.js";
 import { MakoClient } from "./x402/client.js";
 import { ALL_TOOLS } from "./tools/index.js";
 import type { ToolContext, ToolDefinition } from "./tools/types.js";
@@ -18,11 +18,13 @@ export async function createServer(opts: CreateServerOptions = {}): Promise<McpS
   let client = opts.client;
   let buyerWallet = opts.buyerWallet;
   if (!client) {
-    const signer = await buildSigner(config);
-    client = new MakoClient(config, signer);
+    const built = buildX402Client(config);
+    client = new MakoClient(config, built.client);
+    buyerWallet ??= built.buyerAddress;
   }
   if (!buyerWallet) {
-    buyerWallet = buyerAddress(config);
+    const built = buildX402Client(config);
+    buyerWallet = built.buyerAddress;
   }
   const ctx: ToolContext = { client, config, buyerWallet };
 

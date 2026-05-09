@@ -13,7 +13,7 @@
  * Total per full run (sans verify): $0.12
  */
 import { loadConfig } from "../src/config.js";
-import { buildSigner, buyerAddress } from "../src/x402/wallet.js";
+import { buildX402Client } from "../src/x402/wallet.js";
 import { MakoClient } from "../src/x402/client.js";
 import { ALL_TOOLS } from "../src/tools/index.js";
 import type { ToolContext } from "../src/tools/types.js";
@@ -35,9 +35,9 @@ const SAMPLE_INPUTS: Record<string, unknown> = {
 
 async function main(): Promise<void> {
   const config = loadConfig();
-  const signer = await buildSigner(config);
-  const client = new MakoClient(config, signer);
-  const ctx: ToolContext = { client, config, buyerWallet: buyerAddress(config) };
+  const { client: x402, buyerAddress } = buildX402Client(config);
+  const client = new MakoClient(config, x402);
+  const ctx: ToolContext = { client, config, buyerWallet: buyerAddress };
 
   console.log(`buyer wallet: ${ctx.buyerWallet}`);
   console.log(`base url:     ${config.baseUrl}`);

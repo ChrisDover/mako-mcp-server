@@ -1,4 +1,8 @@
-import { wrapFetchWithPayment, decodeXPaymentResponse, type Signer } from "x402-fetch";
+import {
+  wrapFetchWithPayment,
+  decodePaymentResponseHeader,
+  type x402Client,
+} from "@x402/fetch";
 import type { Config } from "../config.js";
 
 export interface PaymentMetadata {
@@ -29,14 +33,10 @@ export class MakoClient {
 
   constructor(
     private readonly config: Config,
-    signer: Signer,
+    x402: x402Client,
     fetchImpl: typeof fetch = globalThis.fetch,
   ) {
-    this.fetchWithPay = wrapFetchWithPayment(
-      fetchImpl,
-      signer,
-      config.maxPaymentBaseUnits,
-    );
+    this.fetchWithPay = wrapFetchWithPayment(fetchImpl, x402);
   }
 
   async call<T = unknown>(opts: PaidCallOptions): Promise<PaidCallResult<T>> {
@@ -88,15 +88,14 @@ export class MakoClient {
 
 function extractPayment(response: Response, data: unknown): PaymentMetadata {
   const header =
-    response.headers.get("x-payment-response") ||
-    response.headers.get("payment-response");
-  let amount_usdc: string | null = null;
+    response.headers.get("payment-response") ||
+    response.headers.get("x-payment-response");
   let tx_hash: string | null = null;
   let network: string | null = null;
   let payer: string | null = null;
   if (header) {
     try {
-      const decoded = decodeXPaymentResponse(header) as Record<string, unknown>;
+      const decoded = decodePaymentResponseHeader(header) as Record<string, unknown>;
       tx_hash = (decoded?.transaction as string) ?? null;
       network = (decoded?.network as string) ?? null;
       payer = (decoded?.payer as string) ?? null;
@@ -109,5 +108,5 @@ function extractPayment(response: Response, data: unknown): PaymentMetadata {
       ? (data as { request_id?: unknown }).request_id
       : undefined;
   const request_id = typeof reqIdFromBody === "string" ? reqIdFromBody : null;
-  return { amount_usdc, tx_hash, network, payer, request_id };
+  return { amount_usdc: null, tx_hash, network, payer, request_id };
 }

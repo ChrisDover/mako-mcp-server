@@ -10,9 +10,9 @@ const config: Config = {
   privateKey: "0x" + "1".repeat(64),
 };
 
-vi.mock("x402-fetch", () => ({
+vi.mock("@x402/fetch", () => ({
   wrapFetchWithPayment: (fetchImpl: typeof fetch) => fetchImpl,
-  decodeXPaymentResponse: (header: string) => {
+  decodePaymentResponseHeader: (header: string) => {
     return JSON.parse(Buffer.from(header, "base64").toString("utf8"));
   },
 }));
