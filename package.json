@@ -1,5 +1,5 @@
 {
-  "name": "@pollinate/mako-mcp",
+  "name": "@pollinateresearch/mako-mcp",
   "version": "0.1.0",
   "description": "MAKO's paid x402 endpoints (route, pulse, pricing, reputation, verify) as installable MCP tools. Drop-in for Claude Desktop, Hermes Agent, OpenClaw, Cline, Continue.dev, and any MCP-native agent framework.",
   "type": "module",
