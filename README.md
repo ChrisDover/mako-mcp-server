@@ -1,10 +1,10 @@
-# @pollinate/mako-mcp
+# @pollinateresearch/mako-mcp
 
-MAKO's paid x402 endpoints (route, pulse, pricing, reputation, verify) wrapped as installable MCP tools. One line of config and any MCP-native agent — Claude Desktop, Hermes Agent, OpenClaw, Cline, Continue.dev — can route through MAKO's trust layer.
+MAKO's paid x402 endpoints (route, pulse, pricing, reputation, verify, markets-aggregate) wrapped as installable MCP tools. One line of config and any MCP-native agent — Claude Desktop, Hermes Agent, OpenClaw, Cline, Continue.dev — can route through MAKO's trust layer.
 
 ## What it does
 
-Exposes 5 tools to your agent:
+Exposes 6 tools to your agent:
 
 | Tool | Endpoint | Cost (USDC) | Purpose |
 |---|---|---|---|
@@ -13,6 +13,7 @@ Exposes 5 tools to your agent:
 | `mako_pricing` | `GET /api/pricing/index` | $0.02 | Live price percentiles for x402 services by category |
 | `mako_reputation` | `GET /api/reputation/wallet` | $0.03 | Operator wallet reputation across MAKO's verification history |
 | `mako_verify` | `POST /api/agent-commerce/verify` | $0.25 | Deep verification of an unfamiliar endpoint (schema, settlement, risk, call plan) |
+| `mako_markets_aggregate` | `GET /api/markets/aggregate` | $0.05 | Top prediction markets across Polymarket + Kalshi + Limitless, normalized and signed. For trading bots, sentiment readers, audit trails. |
 
 Every tool call is paid via x402 from your buyer wallet on Base mainnet. The server transparently handles the 402 → EIP-3009 sign → 200 retry flow. Each response includes a `_payment` block with the on-chain transaction hash so the agent has proof of payment.
 
@@ -21,13 +22,13 @@ Every tool call is paid via x402 from your buyer wallet on Base mainnet. The ser
 No install needed if you use `npx`:
 
 ```bash
-npx -y @pollinate/mako-mcp
+npx -y @pollinateresearch/mako-mcp
 ```
 
 Or install globally:
 
 ```bash
-npm install -g @pollinate/mako-mcp
+npm install -g @pollinateresearch/mako-mcp
 mako-mcp
 ```
 
@@ -61,7 +62,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
   "mcpServers": {
     "mako": {
       "command": "npx",
-      "args": ["-y", "@pollinate/mako-mcp"],
+      "args": ["-y", "@pollinateresearch/mako-mcp"],
       "env": {
         "X402_BUYER_PRIVATE_KEY": "0xYOUR_BUYER_PRIVATE_KEY_HERE"
       }
@@ -70,7 +71,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 }
 ```
 
-Restart Claude Desktop. The 5 `mako_*` tools will appear in the tool picker.
+Restart Claude Desktop. The 6 `mako_*` tools will appear in the tool picker.
 
 ## Connect to Hermes Agent
 
@@ -80,7 +81,7 @@ Hermes loads MCP servers via its agent config. See [Hermes Agent docs](https://g
 mcp_servers:
   - name: mako
     command: npx
-    args: ["-y", "@pollinate/mako-mcp"]
+    args: ["-y", "@pollinateresearch/mako-mcp"]
     env:
       X402_BUYER_PRIVATE_KEY: ${X402_BUYER_PRIVATE_KEY}
 ```
@@ -97,7 +98,7 @@ Any MCP-native client that accepts a `command` + `env` config works. The pattern
 
 ```json
 "command": "npx",
-"args": ["-y", "@pollinate/mako-mcp"],
+"args": ["-y", "@pollinateresearch/mako-mcp"],
 "env": { "X402_BUYER_PRIVATE_KEY": "0x..." }
 ```
 
@@ -169,6 +170,26 @@ Deep verification of a single endpoint.
   "risk_mode": "strict"                      // optional: "standard" | "strict"
 }
 ```
+
+### `mako_markets_aggregate`
+
+Top prediction markets across Polymarket, Kalshi, and Limitless, normalized into one signed response.
+
+```jsonc
+{
+  "query": "bitcoin",                          // optional substring filter on market title
+  "category": "crypto",                        // optional: "crypto" | "sports" | "politics" | "world" | "culture" | "economics" | "entertainment"
+  "sources": "polymarket,kalshi,limitless",    // optional comma-separated source list
+  "top_n": 10,                                 // optional, max 50
+  "min_volume_24h_usd": 1000,                  // optional volume floor (USD)
+  "min_liquidity_usd": 0,                      // optional liquidity floor — Limitless doesn't report liquidity, so any min > 0 will skip Limitless markets
+  "include_resolved": false                    // optional; include recently-resolved markets
+}
+```
+
+Returns ranked markets with normalized fields (title, outcomes, prices, 24h volume, liquidity, expiration, source URL), per-platform editorial reliability scores flagged `score_source: static_v1` (live pulse-ledger probes coming in v0.3), and an EIP-191 signed receipt over RFC 8785 canonical JSON.
+
+Use cases: trading bots that need one-call multi-source market data, AI agents reading market sentiment as a forward-looking signal, compliance-conscious traders who want signed attestations of point-in-time market state.
 
 ## Manual smoke test
 

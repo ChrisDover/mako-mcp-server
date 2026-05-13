@@ -45,16 +45,17 @@ function ctx(client: MakoClient): ToolContext {
 }
 
 describe("ALL_TOOLS", () => {
-  it("exposes 5 tools with unique names", () => {
-    expect(ALL_TOOLS).toHaveLength(5);
+  it("exposes 6 tools with unique names", () => {
+    expect(ALL_TOOLS).toHaveLength(6);
     const names = ALL_TOOLS.map((t) => t.name);
-    expect(new Set(names).size).toBe(5);
+    expect(new Set(names).size).toBe(6);
     expect(names).toEqual([
       "mako_route",
       "mako_pulse",
       "mako_pricing",
       "mako_reputation",
       "mako_verify",
+      "mako_markets_aggregate",
     ]);
   });
 
