@@ -4,6 +4,8 @@ import { pricingTool } from "./pricing.js";
 import { reputationTool } from "./reputation.js";
 import { verifyTool } from "./verify.js";
 import { marketsAggregateTool } from "./marketsAggregate.js";
+import { governanceProposalSignalTool } from "./governanceProposalSignal.js";
+import { governanceWeeklyBriefTool } from "./governanceWeeklyBrief.js";
 import type { ToolDefinition } from "./types.js";
 
 export const ALL_TOOLS: ToolDefinition<any>[] = [
@@ -13,6 +15,8 @@ export const ALL_TOOLS: ToolDefinition<any>[] = [
   reputationTool,
   verifyTool,
   marketsAggregateTool,
+  governanceProposalSignalTool,
+  governanceWeeklyBriefTool,
 ];
 
 export {
@@ -22,4 +26,6 @@ export {
   reputationTool,
   verifyTool,
   marketsAggregateTool,
+  governanceProposalSignalTool,
+  governanceWeeklyBriefTool,
 };

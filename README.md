@@ -1,10 +1,10 @@
 # @pollinateresearch/mako-mcp
 
-MAKO's paid x402 endpoints (route, pulse, pricing, reputation, verify, markets-aggregate) wrapped as installable MCP tools. One line of config and any MCP-native agent — Claude Desktop, Hermes Agent, OpenClaw, Cline, Continue.dev — can route through MAKO's trust layer.
+MAKO's paid x402 endpoints (route, pulse, pricing, reputation, verify, markets-aggregate, governance proposal-signal + weekly-brief) wrapped as installable MCP tools. One line of config and any MCP-native agent — Claude Desktop, Hermes Agent, OpenClaw, Cline, Continue.dev — can route through MAKO's trust layer.
 
 ## What it does
 
-Exposes 6 tools to your agent:
+Exposes 8 tools to your agent:
 
 | Tool | Endpoint | Cost (USDC) | Purpose |
 |---|---|---|---|
@@ -14,6 +14,8 @@ Exposes 6 tools to your agent:
 | `mako_reputation` | `GET /api/reputation/wallet` | $0.03 | Operator wallet reputation across MAKO's verification history |
 | `mako_verify` | `POST /api/agent-commerce/verify` | $0.25 | Deep verification of an unfamiliar endpoint (schema, settlement, risk, call plan) |
 | `mako_markets_aggregate` | `GET /api/markets/aggregate` | $0.05 | Top prediction markets across Polymarket + Kalshi + Limitless, normalized and signed. For trading bots, sentiment readers, audit trails. |
+| `mako_governance_proposal_signal` | `GET /api/governance/proposal-signal` | $0.05 | Recent Snapshot proposals for a DAO space — deadlines, choices, scores, urgency. For hourly governance polling. |
+| `mako_governance_weekly_brief` | `POST /api/governance/weekly-brief` | $1.00 | Full source-linked DAO governance weekly brief from Snapshot + Tally, summarized via local Gemma. Markdown + structured metadata. |
 
 Every tool call is paid via x402 from your buyer wallet on Base mainnet. The server transparently handles the 402 → EIP-3009 sign → 200 retry flow. Each response includes a `_payment` block with the on-chain transaction hash so the agent has proof of payment.
 
@@ -71,7 +73,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 }
 ```
 
-Restart Claude Desktop. The 6 `mako_*` tools will appear in the tool picker.
+Restart Claude Desktop. The 8 `mako_*` tools will appear in the tool picker.
 
 ## Connect to Hermes Agent
 
@@ -190,6 +192,45 @@ Top prediction markets across Polymarket, Kalshi, and Limitless, normalized into
 Returns ranked markets with normalized fields (title, outcomes, prices, 24h volume, liquidity, expiration, source URL), per-platform editorial reliability scores flagged `score_source: static_v1` (live pulse-ledger probes coming in v0.3), and an EIP-191 signed receipt over RFC 8785 canonical JSON.
 
 Use cases: trading bots that need one-call multi-source market data, AI agents reading market sentiment as a forward-looking signal, compliance-conscious traders who want signed attestations of point-in-time market state.
+
+### `mako_governance_proposal_signal`
+
+Recent Snapshot proposals for a DAO space. Lightweight ($0.05) polling tool — agents call this hourly and only escalate to the full weekly brief when something interesting hits.
+
+```jsonc
+{
+  "snapshot_space": "arbitrumfoundation.eth",     // default 'arbitrumfoundation.eth'
+  "snapshot_state": ["active", "pending"],        // subset of ["active","pending","closed"]
+  "snapshot_order_direction": "asc",              // "asc" | "desc"
+  "limit": 5                                      // 1-25, default 5
+}
+```
+
+Returns proposal metadata (title, body excerpt, choices, scores, state, end timestamp, urgency flags) with a signed receipt. No model summarization — pure source-linked passthrough.
+
+### `mako_governance_weekly_brief`
+
+Premium tier ($1.00) — the canonical "one-call DAO weekly digest" product. Pulls from Snapshot + Tally, summarizes via local Gemma model, returns Markdown + structured proposal metadata.
+
+```jsonc
+{
+  "client_name": "Agentic Market Buyer",          // optional, default "Agentic Market Buyer"
+  "snapshot_spaces": ["arbitrumfoundation.eth"],  // up to 10 spaces
+  "snapshot_states": ["active", "pending"],       // subset of ["active","pending","closed"]
+  "snapshot_order_direction": "asc",
+  "tally_governor_ids": [],                       // optional Tally governor IDs
+  "tally_organization_ids": [],                   // optional Tally org IDs
+  "limit": 5,                                     // proposals per source, max 25
+  "max_summaries": 10,                            // optional cap on model summaries
+  "max_body_chars": 4000,                         // optional body truncation
+  "num_predict": 256,                             // optional model token budget
+  "timeout": 30,                                  // optional per-summary timeout seconds
+  "skip_model": false,                            // true → deterministic excerpts only
+  "write_artifacts": false                        // true → server persists brief artifacts
+}
+```
+
+Returns `{ markdown, proposals[], request_id, receipt, _payment }`. Use `skip_model: true` for fully deterministic output (no LLM, faster, lower-variance) when downstream consumers need byte-stable input.
 
 ## Manual smoke test
 

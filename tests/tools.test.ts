@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ALL_TOOLS, routeTool, pulseTool, pricingTool, reputationTool, verifyTool } from "../src/tools/index.js";
+import {
+  ALL_TOOLS,
+  routeTool,
+  pulseTool,
+  pricingTool,
+  reputationTool,
+  verifyTool,
+  governanceProposalSignalTool,
+  governanceWeeklyBriefTool,
+} from "../src/tools/index.js";
 import type { ToolContext } from "../src/tools/types.js";
 import type { MakoClient, PaidCallOptions, PaidCallResult } from "../src/x402/client.js";
 
@@ -45,10 +54,10 @@ function ctx(client: MakoClient): ToolContext {
 }
 
 describe("ALL_TOOLS", () => {
-  it("exposes 6 tools with unique names", () => {
-    expect(ALL_TOOLS).toHaveLength(6);
+  it("exposes 8 tools with unique names", () => {
+    expect(ALL_TOOLS).toHaveLength(8);
     const names = ALL_TOOLS.map((t) => t.name);
-    expect(new Set(names).size).toBe(6);
+    expect(new Set(names).size).toBe(8);
     expect(names).toEqual([
       "mako_route",
       "mako_pulse",
@@ -56,6 +65,8 @@ describe("ALL_TOOLS", () => {
       "mako_reputation",
       "mako_verify",
       "mako_markets_aggregate",
+      "mako_governance_proposal_signal",
+      "mako_governance_weekly_brief",
     ]);
   });
 
@@ -207,5 +218,104 @@ describe("mako_verify", () => {
   it("rejects target_url > 500 chars", () => {
     const long = "https://example.com/" + "x".repeat(500);
     expect(() => verifyTool.zodSchema.parse({ target_url: long })).toThrow();
+  });
+});
+
+describe("mako_governance_proposal_signal", () => {
+  it("GETs /api/governance/proposal-signal with defaults applied", async () => {
+    const m = mockClient();
+    const validated = governanceProposalSignalTool.zodSchema.parse({});
+    await governanceProposalSignalTool.handler(validated, ctx(m.client));
+    expect(m.calls[0].method).toBe("GET");
+    expect(m.calls[0].path).toBe("/api/governance/proposal-signal");
+    expect(m.calls[0].query).toEqual({
+      snapshot_space: "arbitrumfoundation.eth",
+      snapshot_state: ["active", "pending"],
+      snapshot_order_direction: "asc",
+      limit: 5,
+    });
+  });
+
+  it("passes through custom space and state filters", async () => {
+    const m = mockClient();
+    const validated = governanceProposalSignalTool.zodSchema.parse({
+      snapshot_space: "uniswap.eth",
+      snapshot_state: ["closed"],
+      limit: 10,
+    });
+    await governanceProposalSignalTool.handler(validated, ctx(m.client));
+    expect(m.calls[0].query).toMatchObject({
+      snapshot_space: "uniswap.eth",
+      snapshot_state: ["closed"],
+      limit: 10,
+    });
+  });
+
+  it("rejects limit > 25", () => {
+    expect(() =>
+      governanceProposalSignalTool.zodSchema.parse({ limit: 100 }),
+    ).toThrow();
+  });
+
+  it("rejects unknown state", () => {
+    expect(() =>
+      governanceProposalSignalTool.zodSchema.parse({ snapshot_state: ["bogus"] }),
+    ).toThrow();
+  });
+});
+
+describe("mako_governance_weekly_brief", () => {
+  it("POSTs /api/governance/weekly-brief with defaults applied", async () => {
+    const m = mockClient();
+    const validated = governanceWeeklyBriefTool.zodSchema.parse({});
+    await governanceWeeklyBriefTool.handler(validated, ctx(m.client));
+    expect(m.calls[0].method).toBe("POST");
+    expect(m.calls[0].path).toBe("/api/governance/weekly-brief");
+    expect(m.calls[0].body).toMatchObject({
+      client_name: "Agentic Market Buyer",
+      snapshot_spaces: ["arbitrumfoundation.eth"],
+      snapshot_states: ["active", "pending"],
+      snapshot_order_direction: "asc",
+      tally_governor_ids: [],
+      tally_organization_ids: [],
+      limit: 5,
+      skip_model: false,
+      write_artifacts: false,
+    });
+  });
+
+  it("forwards model controls and skip_model flag verbatim", async () => {
+    const m = mockClient();
+    const validated = governanceWeeklyBriefTool.zodSchema.parse({
+      snapshot_spaces: ["aave.eth", "uniswap.eth"],
+      skip_model: true,
+      max_summaries: 3,
+      max_body_chars: 4000,
+      num_predict: 256,
+      timeout: 30,
+    });
+    await governanceWeeklyBriefTool.handler(validated, ctx(m.client));
+    expect(m.calls[0].body).toMatchObject({
+      snapshot_spaces: ["aave.eth", "uniswap.eth"],
+      skip_model: true,
+      max_summaries: 3,
+      max_body_chars: 4000,
+      num_predict: 256,
+      timeout: 30,
+    });
+  });
+
+  it("rejects max_summaries > 25", () => {
+    expect(() =>
+      governanceWeeklyBriefTool.zodSchema.parse({ max_summaries: 100 }),
+    ).toThrow();
+  });
+
+  it("rejects > 10 snapshot spaces", () => {
+    expect(() =>
+      governanceWeeklyBriefTool.zodSchema.parse({
+        snapshot_spaces: Array(11).fill("x.eth"),
+      }),
+    ).toThrow();
   });
 });
